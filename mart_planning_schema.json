@@ -1,0 +1,168 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cortex-agent.local/schemas/mart-planning.schema.json",
+  "title": "MartPlanningRequest",
+  "type": "object",
+  "required": [
+    "mart_name",
+    "owner_team",
+    "grain",
+    "source_tables",
+    "dimensions",
+    "metrics",
+    "refresh_mode",
+    "destination"
+  ],
+  "properties": {
+    "mart_name": {
+      "type": "string",
+      "minLength": 3,
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "owner_team": {
+      "type": "string",
+      "minLength": 2
+    },
+    "description": {
+      "type": "string"
+    },
+    "grain": {
+      "type": "string",
+      "enum": ["hour", "day", "week", "month", "user", "account", "event"]
+    },
+    "source_tables": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["project", "dataset", "table"],
+        "properties": {
+          "project": {"type": "string"},
+          "dataset": {"type": "string"},
+          "table": {"type": "string"},
+          "alias": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "join_plan": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["left", "right", "type", "condition"],
+        "properties": {
+          "left": {"type": "string"},
+          "right": {"type": "string"},
+          "type": {"type": "string", "enum": ["inner", "left", "right", "full"]},
+          "condition": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "dimensions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name", "expression", "data_type"],
+        "properties": {
+          "name": {"type": "string"},
+          "expression": {"type": "string"},
+          "data_type": {
+            "type": "string",
+            "enum": ["STRING", "INT64", "FLOAT64", "NUMERIC", "BOOL", "DATE", "DATETIME", "TIMESTAMP"]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "metrics": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["metric_id", "expression", "aggregation"],
+        "properties": {
+          "metric_id": {"type": "string"},
+          "expression": {"type": "string"},
+          "aggregation": {
+            "type": "string",
+            "enum": ["sum", "count", "count_distinct", "avg", "min", "max", "ratio", "custom"]
+          },
+          "filters": {
+            "type": "array",
+            "items": {"type": "string"}
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "refresh_mode": {
+      "type": "string",
+      "enum": ["full", "incremental"]
+    },
+    "incremental_config": {
+      "type": "object",
+      "properties": {
+        "watermark_column": {"type": "string"},
+        "lookback_days": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "partitioning": {
+      "type": "object",
+      "properties": {
+        "field": {"type": "string"},
+        "type": {"type": "string", "enum": ["DAY", "HOUR", "MONTH", "YEAR"]}
+      },
+      "additionalProperties": false
+    },
+    "clustering": {
+      "type": "array",
+      "maxItems": 4,
+      "items": {"type": "string"}
+    },
+    "data_quality": {
+      "type": "object",
+      "properties": {
+        "require_non_null_dimensions": {"type": "boolean"},
+        "require_unique_keys": {"type": "boolean"},
+        "freshness_sla_hours": {"type": "integer", "minimum": 1}
+      },
+      "additionalProperties": false
+    },
+    "destination": {
+      "type": "object",
+      "required": ["project", "dataset", "table"],
+      "properties": {
+        "project": {"type": "string"},
+        "dataset": {"type": "string"},
+        "table": {"type": "string"},
+        "write_disposition": {
+          "type": "string",
+          "enum": ["WRITE_TRUNCATE", "WRITE_APPEND"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "approvals": {
+      "type": "object",
+      "properties": {
+        "require_user_approval": {"type": "boolean"},
+        "require_governance_approval": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {"refresh_mode": {"const": "incremental"}}
+      },
+      "then": {
+        "required": ["incremental_config"]
+      }
+    }
+  ],
+  "additionalProperties": false
+}
